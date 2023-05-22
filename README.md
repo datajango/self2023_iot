@@ -21,9 +21,17 @@ SELF 2023, IOT, MQTT, Raspberry PI, ESP32
 
 - [Add SSH Key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
+- git config --global user.email "you@example.com"
+- git config --global user.name "Your Name"
+
+
 ## Repo
 
 - I have created a Github repo for this talk.
     - [Self 2023 IoT](https://github.com/datajango/self2023_iot)
 
-    
+- Add SSH keys for git
+
+- git clone git@github.com:datajango/self2023_iot.git
+
+## 
