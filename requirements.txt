@@ -1,0 +1,2 @@
+wxPython
+paho-mqtt
