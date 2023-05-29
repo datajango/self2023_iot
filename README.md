@@ -121,3 +121,6 @@ pip install -r requirements.txt
 1. Once you have MQTT Explorer installed, you can open it up and connect to your broker. You can do this by clicking the Add Connection button in the top left corner of the window.
 1. Here is a sample of the MQTT Explorer window.
 ![](./images/mqt_explorer_mqtt_connection.png)
+1. Next you can use MQTT Explorer to subscribe to the test/topic topic. You can do this by clicking the Subscribe button in the top left corner of the window.
+1. After this you can publish a message to the test/topic topic. You can do this by clicking the Publish button in the top left corner of the window.
+![](./images/mqtt_explorer_publishing_a_test_message.png)
