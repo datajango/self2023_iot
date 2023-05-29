@@ -113,3 +113,11 @@ source .venv/Scripts/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+## Testing with MQTT Explorer
+
+1. First, you can grab MQTT Explorer from the [MQTT Explorer](https://mqtt-explorer.com/) website.
+1. Next, you can install MQTT Explorer by unzipping the downloaded file and running the executable.
+1. Once you have MQTT Explorer installed, you can open it up and connect to your broker. You can do this by clicking the Add Connection button in the top left corner of the window.
+1. Here is a sample of the MQTT Explorer window.
+![](./images/http://mqtt-explorer.com/)
