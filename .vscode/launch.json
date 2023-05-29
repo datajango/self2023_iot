@@ -13,9 +13,9 @@
             "justMyCode": true
         },
         {
-            "name": "wxpython_demo_001",
-            "cwd": "${workspaceFolder}/self2023_iot/wxpython_demo/",
-            "program": "wxpython_demo_001.py",
+            "name": "mqtt_monitor",
+            "cwd": "${workspaceFolder}",
+            "program": "mqtt_monitor/main.py",
             "args": [],
             "type": "python",
             "request": "launch",
@@ -25,5 +25,17 @@
                 "PYTHONPATH": "${workspaceFolder}"
             },
         },
+        {
+            "name": "Python: Pytest",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-svv",
+                "${workspaceFolder}/mqtt_monitor/tests/test_config_manager_v1.py"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        }
     ]
 }

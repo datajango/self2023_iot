@@ -1,0 +1,14 @@
+{
+    "connections": [
+        {
+            "name": "RPI4 Mosquitto MQTT Broker",
+            "broker_address": "192.168.1.22",
+            "broker_port": 1883,
+            "topics": [
+                "#"
+            ]
+        }
+    ],
+    "default_connection": "RPI4 Mosquitto MQTT Broker",
+    "auto_connect": true
+}
