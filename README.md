@@ -3,7 +3,7 @@
 - [SouthEast LinuxFest 2023 DRAFT SCHEDULE – SUBJECT TO CHANGE](https://drive.google.com/file/d/1Ncb9qsIFZWCa1sbq_RDgqzSwXE24Gy0t/edit)
 - Created by Anthony Leotta
 - This is the source code to accompany my talk at Southe East Linux Fest 2023
-- ![SELF 2023](./images/SELF2023_June_9_2023.png)
+![SELF 2023](./images/SELF2023_June_9_2023.png)
 
 ## Raspberry PI Machine
 
