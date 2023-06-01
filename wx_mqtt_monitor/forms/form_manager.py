@@ -270,9 +270,10 @@ class ButtonField():
     def validate(self):
         return True
 
+from simpleeval import simple_eval
 
 def evaluate_condition(condition, context):
-    return eval(condition, {}, context)
+    return simple_eval(condition, names=context)
 
 class FormManager():
     def __init__(self) -> None:
