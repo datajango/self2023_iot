@@ -330,6 +330,4 @@ class FormManager():
                         field.enable()
                     else:
                         field.disable()
-        else:
-            print("Form is invalid!")
         
