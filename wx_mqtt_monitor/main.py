@@ -1,6 +1,6 @@
 import wx
 import logging
-from mqtt_monitor.config_manager import ConfigurationManager
+from wx_mqtt_monitor.config_manager import ConfigurationManager
 from main_window import MainWindow
 from logger import setup_logger
 

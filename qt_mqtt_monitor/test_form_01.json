@@ -1,0 +1,84 @@
+{
+    "form_fields": [
+        {
+            "type": "TextField",
+            "label": "Name:",
+            "input_length": 32,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 8,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 32,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 32,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 32,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 32,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 32,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        },
+        {
+            "type": "TextField",
+            "label": "Password:",
+            "input_length": 64,
+            "validation_rules": {
+                "type": "length",
+                "min": 1,
+                "max": 20
+            }
+        }
+    ]
+}

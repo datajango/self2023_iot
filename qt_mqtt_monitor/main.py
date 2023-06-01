@@ -1,20 +1,24 @@
 import json
 import logging
 from datetime import datetime
-import wx
-from connection_dialog import ConnectionDialog
+from PySide6 import QtCore, QtGui, QtWidgets
+from qt_mqtt_monitor.connection_dialog import ConnectionDialog
 import paho.mqtt.client as mqtt
-from mqtt_monitor.mqtt_client import MqttClient
+from qt_mqtt_monitor.mqtt_client import MqttClient
+from qt_mqtt_monitor.config_manager import ConfigurationManager
+from logger import setup_logger
 
-class MainWindow(wx.Frame): 
-    def __init__(self, parent, title, config_manager, logger): 
-        super(MainWindow, self).__init__(parent, title = title, size = (350,300)) 
+class MainWindow(QtWidgets.QMainWindow):
+    def __init__(self, parent=None, title="", config_manager=None, logger=None):
+        super(MainWindow, self).__init__(parent)
+        self.setWindowTitle(title)
         self.config_manager = config_manager
         self.logger = logger
         self.message_counter = 0
-        self.InitUI()         
         self.setup_mqtt_client()
-        
+        self.InitUI()
+        self.center()
+
     def setup_mqtt_client(self):
         default_connection_name = self.config_manager.get_value("default_connection")
         connections = self.config_manager.get_value("connections", [])
@@ -25,43 +29,43 @@ class MainWindow(wx.Frame):
                 topics = self.config_manager.get_value(f"connections/{i}/topics", [])
 
                 # Create the MQTT Client
-                self.mqtt_client = MqttClient(broker_address, 
-                                              broker_port, 
+                self.mqtt_client = MqttClient(broker_address,
+                                              broker_port,
                                               self.on_mqtt_message,
                                               self.on_mqtt_connect)
                 if self.config_manager.get_value("auto_connect", False):
                     self.mqtt_client.connect()
-                    
+
                 break
 
-    
-    def InitUI(self): 
-        panel = wx.Panel(self) 
-        box = wx.BoxSizer(wx.HORIZONTAL) 
-        self.text = wx.TextCtrl(panel, style = wx.TE_MULTILINE, size = (300,200)) 
-        box.Add(self.text, 1, flag = wx.EXPAND) 
-        panel.SetSizer(box) 
+    def InitUI(self):
+        central_widget = QtWidgets.QWidget()
+        self.setCentralWidget(central_widget)
+        box = QtWidgets.QHBoxLayout(central_widget)
+        self.text = QtWidgets.QTextEdit()
+        box.addWidget(self.text)
 
         self.create_menu()
 
+    def center(self):
+        available_geometry = QtWidgets.QApplication.primaryScreen().availableGeometry()
+        self.setGeometry(available_geometry.width() / 4, available_geometry.height() / 4,
+                         available_geometry.width() / 2, available_geometry.height() / 2)
+
     def OnMessage(self, message):
-        self.text.AppendText(message+'\n')
+        self.text.append(message)
 
     def create_menu(self):
-        # Adding a menu bar
-        menuBar = wx.MenuBar()
-        fileMenu = wx.Menu()
-        connectItem = fileMenu.Append(wx.ID_ANY, "Connections", "Open Connections Dialog")
-        menuBar.Append(fileMenu, "&File")
-        self.SetMenuBar(menuBar)
+        menuBar = QtWidgets.QMenuBar()
+        fileMenu = QtWidgets.QMenu("&File")
+        connectItem = fileMenu.addAction("Connections", self.OnConnections)
+        menuBar.addMenu(fileMenu)
+        self.setMenuBar(menuBar)
 
-        self.Bind(wx.EVT_MENU, self.OnConnections, connectItem)
-
-    def OnConnections(self, event):
+    def OnConnections(self):
         dlg = ConnectionDialog(self, self.config_manager)
-        dlg.ShowModal()
-        dlg.Destroy()
-
+        dlg.exec()
+        dlg.destroy()
 
     def on_mqtt_message(self, client, userdata, message):
         self.message_counter += 1
@@ -72,9 +76,9 @@ class MainWindow(wx.Frame):
         try:
             data = json.loads(payload)
         except json.JSONDecodeError as e:
-                logging.error(f"Invalid JSON in configuration file: {str(e)}")
+            logging.error(f"Invalid JSON in configuration file: {str(e)}")
         except Exception as e:
-                logging.error(f"Unexpected error while loading configuration: {str(e)}")
+            logging.error(f"Unexpected error while loading configuration: {str(e)}")
 
         pretty_data = json.dumps(data, indent=4)
 
@@ -82,19 +86,29 @@ class MainWindow(wx.Frame):
 
         self.logger.info(message)
 
-        wx.CallAfter(self.text.AppendText, message+'\n')
+        self.text.append(message)
 
     def on_mqtt_connect(self, client, _userdata, flags_dict, result):
-        #if rc == 0:
         print("Connected to MQTT broker.")
         topics = self.config_manager.get_value("connections/0/topics", [])
         for topic in topics:
             self.mqtt_client.add_route(topic)
-        # else:
-        #     print(f"Failed to connect to MQTT broker with result code {str(rc)}")
 
     def show_message(self, message):
-        # This function will run in the main thread
-        # Add your code to update the GUI with the incoming message here
-        self.text.AppendText(message+'\n')
+        self.text.append(message)
 
+
+def main():
+    logger = setup_logger("log", "logfile.log")
+    config_manager = ConfigurationManager("settings.json")
+
+    app = QtWidgets.QApplication([])
+    frame = MainWindow(title="MQTT Monitor", config_manager=config_manager, logger=logger)
+    frame.show()
+
+    logger.info("mqtt_monitor created by Anthony Leotta")
+    app.exec()
+
+
+if __name__ == '__main__':
+    main()

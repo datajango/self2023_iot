@@ -10,5 +10,5 @@
         }
     ],
     "default_connection": "RPI4 Mosquitto MQTT Broker",
-    "auto_connect": true
+    "auto_connect": false
 }

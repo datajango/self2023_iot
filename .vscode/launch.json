@@ -13,9 +13,22 @@
             "justMyCode": true
         },
         {
-            "name": "mqtt_monitor",
+            "name": "wx_mqtt_monitor",
             "cwd": "${workspaceFolder}",
-            "program": "mqtt_monitor/main.py",
+            "program": "wx_mqtt_monitor/main.py",
+            "args": [],
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+        },        
+        {
+            "name": "qt_mqtt_monitor",
+            "cwd": "${workspaceFolder}",
+            "program": "qt_mqtt_monitor/main.py",
             "args": [],
             "type": "python",
             "request": "launch",
@@ -26,13 +39,24 @@
             },
         },
         {
-            "name": "Python: Pytest",
+            "name": "Pytest (all tests)",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-svv"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Pytest form_manager.py",
             "type": "python",
             "request": "launch",
             "module": "pytest",
             "args": [
                 "-svv",
-                "${workspaceFolder}/mqtt_monitor/tests/test_config_manager_v1.py"
+                "${workspaceFolder}/mqtt_monitor/tests/test_form_manager.py"
             ],
             "justMyCode": false,
             "console": "integratedTerminal"

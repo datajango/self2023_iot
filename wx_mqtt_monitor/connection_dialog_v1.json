@@ -1,0 +1,333 @@
+{
+    "form": {
+        "id": "connection_form",
+        "name": "Connection Form",
+        "description": "Form for creating and editing connections",
+        "show_required_indicator": true
+    },
+    "state" : [
+        {
+            "id": "is_valid"          
+        },
+        {
+            "id": "is_editing"
+        },
+        {
+            "id": "is_connected"
+        },
+        {
+            "id": "is_dirty"
+        },
+        {
+            "id": "is_deletable"
+        }
+    ],
+    "events" : [
+        {
+            "id": "save"          
+        },
+        {
+            "id": "delete"
+        },
+        {
+            "id": "advanced"
+        },
+        {
+            "id": "cancel"
+        },
+        {
+            "id": "connect"
+        }
+    ],
+    "form_fields": [
+        {
+            "id": "name",
+            "type": "text",
+            "label": "Name",
+            "description": "Name for the connection",
+            "default": "",
+            "visible": true,  
+            "visibility_condition": "true", 
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "validation": [
+                {
+                    "min_length": 1,
+                    "error_message": "Name is required."
+                }
+            ],
+            "layout": {
+                "direction": "horizontal", 
+                "template": [
+                    ["label", "input", "indicator"],
+                    ["", "error_message", ""]
+                ],
+                "breakpoints": [
+                    {
+                        "screen_size": "sm",
+                        "direction": "vertical"
+                    },
+                    {
+                        "screen_size": "md",
+                        "direction": "horizontal"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "validate_certificate",
+            "type": "checkbox",
+            "label": "Validate Certificate",
+            "description": "If checked, validates the certificate",
+            "default": false,
+            "visible": true,
+            "visibility_condition": "true", 
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "validation": [],
+            "events": ["validate_certificate"]
+        },
+        {
+            "id": "encryption",
+            "type": "checkbox",
+            "label": "Encryption",
+            "description": "If checked, enables encryption",        
+            "default": false,
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "validation": [],
+            "events": ["encryption"]
+        },
+        {
+            "id": "protocol",
+            "type": "dropdown",
+            "label": "Protocol",
+            "description": "Protocol to be used for the connection",
+            "options": ["mqtt://", "ws://"],
+            "default": "mqtt://",
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "validation": [
+                {
+                    "required": true,
+                    "error_message": "Protocol is required."
+                }
+            ]
+        },
+        {
+            "id": "host",
+            "type": "text",
+            "label": "Host",
+            "description": "MQTT Broker host name or IP Address.",
+            "default": "",
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "validation": [
+                {
+                    "required": true,
+                    "error_message": "Host is required for MQTT protocol."
+                }
+            ]
+        },
+        {
+            "id": "port",
+            "type": "text",
+            "label": "Port",
+            "description": "MQTT Broker host name port.",
+            "default": "1883",
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "validation": [
+                {
+                    "required": true,
+                    "error_message": "Port is required for MQTT protocol."
+                }
+            ]
+        },
+        {
+            "id": "username",
+            "type": "text",
+            "label": "Username",
+            "description": "Username for encryption",
+            "default": "",
+            "visible": true,
+            "visibility_condition": "encryption == true",
+            "enabled": false,
+            "enabled_condition": "is_editing && encryption == true",
+
+            "validation": [
+                {
+                    "required": true,
+                    "error_message": "Username is required for encryption."
+                }
+            ]
+        },
+        {
+            "id": "password",
+            "type": "password",
+            "label": "Password",
+            "description": "Password for encryption",
+            "default": "",
+            "visible": true,
+            "visibility_condition": "encryption == true",
+            "enabled": false,
+            "enabled_condition": "is_editing && encryption == true",            
+            "validation": [
+                {
+                    "required": true,
+                    "error_message": "Password is required for encryption."
+                }
+            ]
+        },
+        {
+            "id": "show_password",
+            "type": "checkbox",
+            "label": "Show password",
+            "description": "If checked, makes the password visible",
+            "default": false,
+            "visible": true,
+            "visibility_condition": "encryption == true",
+            "enabled": false,
+            "enabled_condition": "is_editing && encryption == true",            
+            "validation": [],
+            "events": ["show_password"]
+        },
+        {
+            "id": "delete_button",
+            "type": "button",
+            "label": "Delete",
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing && is_deletable",
+            "events": ["delete"]
+        },
+        {
+            "id": "advanced_button",
+            "type": "button",
+            "label": "Advanced",
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing",
+            "events": ["advanced"]
+        },
+        {
+            "id": "save_button",
+            "type": "button",
+            "label": "Save",            
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_editing && is_dirty",
+            "events": ["save"]
+        },
+        {
+            "id": "cancel_button",
+            "type": "button",
+            "label": "Cancel",
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": true,
+            "enabled_condition": "",
+            "events": ["cancel"]
+        },
+        {
+            "id": "connect_button",
+            "type": "button",
+            "label": "Connect",            
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_valid && !is_connected",
+            "events": ["connect"]
+        }
+    ],
+    "layout": [
+        {
+            "row" : [            
+                {
+                    "id": "name"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "validate_certificate"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "encryption"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "protocol"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "host"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "port"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "username"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "password"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "show_password"
+                }
+            ]   
+        },
+        {
+            "row" : [            
+                {
+                    "id": "button_group",
+                    "buttons": [
+                        "delete_button",
+                        "advanced_button",
+                        "save_button",
+                        "cancel_button",
+                        "connect_button"
+                    ]
+                }
+            ]   
+        }
+    ]
+}

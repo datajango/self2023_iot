@@ -1,0 +1,49 @@
+{
+    "fieldSchema": {
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string"
+            },
+            "type": {
+                "type": "string"
+            },
+            "label": {
+                "type": "string"
+            }            
+        },
+        "required": ["id", "type", "label"]
+    },
+    "stateSchema": {
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string"
+            },
+            "description": {
+                "type": "string"
+            }
+        },
+        "required": ["id", "description"]
+    },
+    "eventSchema": {
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string"
+            },
+            "description": {
+                "type": "string"
+            },
+            "data_payload_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "required": ["id", "description", "data_payload_schema"]
+    }
+}
