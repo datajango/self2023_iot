@@ -6,6 +6,14 @@ import wx
 
 from wx_mqtt_monitor.forms.error_indicator import ErrorIndicator
 
+def calc_width(input_length, input):
+    """  Calculate the minimum width of the input field based on the font size """
+    font = input.GetFont()
+    font_size = font.GetPointSize()
+    char_width = font_size * 0.6  # Adjust the multiplier based on font and preferences
+    width = int(input_length * char_width)
+    return width
+
 class DebugGridBagSizer(wx.GridBagSizer):
     def Draw(self, dc):
         for row in range(self.GetRows()):
@@ -136,20 +144,29 @@ def load_json_file(file_name, additional_paths=None):
 
 class TextField:
     def __init__(self, 
+                 form_manager,
                  parent, 
-                 label_text, 
-                 input_length,
-                 validation_rules, 
+                 field_definition,                 
                  entry_args=None, 
                  entry_kwargs=None):
+        self.form_manager = form_manager
         self.parent = parent
-        self.label_text = label_text
-        self.input_length = input_length
-        self.validation_rules = validation_rules
+        self.field_definition = field_definition
+
+        self.label_text = self.field_definition.get("label", f"Text Input:")
+        self.validation_rules = self.field_definition.get("validation_rules", {})
+        self.input_length = self.field_definition.get("input_length", 10)
+
+        self.enabled = self.field_definition.get("enabled", False)
+        self.enabled_condition = self.field_definition.get("enabled_condition", None)
+        self.visible = self.field_definition.get("visible", False)
+        self.visibility_condition = self.field_definition.get("visibility_condition", None)
+
         self.entry_args = entry_args
         self.entry_kwargs = entry_kwargs
         self.error_indicator = None
 
+                
     def validate(self):
         value = self.input.GetValue()
         valid = True
@@ -163,7 +180,7 @@ class TextField:
 
         return valid
 
-    def renderField(self):
+    def renderField(self, sizer):
 
         self.label = wx.StaticText(self.parent, -1, self.label_text)
         
@@ -175,6 +192,13 @@ class TextField:
 
         self.validate()  # Validate the field initially to set the error indicator
 
+        width = calc_width(self.input_length, self.input)
+        self.input.SetMinSize((width, -1))  # Set the desired minimum width
+        
+        sizer.Add(self.label)        
+        sizer.Add(self.input)
+        sizer.Add(self.error_indicator)
+    
         return self.label, self.input, self.error_indicator
 
     def set_error(self, has_error):
@@ -185,28 +209,83 @@ class TextField:
 
     def on_text_changed(self, event):
         text = event.GetEventObject().GetValue()
+
         if not self.validate():
             self.error_indicator.set_error_state(True)
-        else:
+        else:            
             self.error_indicator.set_error_state(False)
+        
+        self.form_manager.validate()
+
         event.Skip()  # important to ensure correct event propagation
+
+    def enable(self):
+        self.enabled = True
+        self.button.Enable()    
+
+    def disable(self):
+        self.enabled = False
+        self.button.Disable()    
+
+class ButtonField():
+    def __init__(self, parent, field_definition):
+        #super(ButtonField, self).__init__(parent)
+        self.parent = parent        
+        self.field_definition = field_definition
+
+        self.id = self.field_definition.get("id", None)
+        self.type = self.field_definition.get("type", "button")
+        self.label = self.field_definition.get("label", "Button")
+        self.visible = self.field_definition.get("visible", True)
+        self.visibility_condition = self.field_definition.get("visibility_condition", None)
+        self.enabled = self.field_definition.get("enabled", True)
+        self.enabled_condition = self.field_definition.get("enabled_condition", None)
+        self.events = self.field_definition.get("events", [])
+    
+    def enable(self):
+        self.enabled = True
+        self.button.Enable()    
+
+    def disable(self):
+        self.enabled = False
+        self.button.Disable()    
+
+    def renderField(self, sizer):
+        self.button = wx.Button(self.parent, label=self.label)
+        self.button.Show(self.visible)
+        self.button.Enable(self.enabled)
+
+        # For the "events" key, you might need to implement a dispatch function
+        # that calls the appropriate method based on the event name.
+        # For now, we just bind to a print function:
+        
+        #for event in self.config.get("events", []):
+        #    self.button.Bind(wx.EVT_BUTTON, self.on_click)
+
+        sizer.Add(self.button, 0, flag=wx.EXPAND)
+        
+    def on_click(self, event):
+        print("Button clicked!")
+ 
+    def validate(self):
+        return True
+
+
+def evaluate_condition(condition, context):
+    return eval(condition, {}, context)
 
 class FormManager():
     def __init__(self) -> None:
         self.form_sizer = None
         self.form_fields = None
         self.form_data = None
+        
+        self.context = {
+            "is_valid": False
+        }
 
     def load_form_definition(self, filename, additional_paths=None):
         self.form_data = load_json_file(filename, additional_paths)
-
-    def calc_width(self, input_length, input):
-            """  Calculate the minimum width of the input field based on the font size """
-            font = input.GetFont()
-            font_size = font.GetPointSize()
-            char_width = font_size * 0.6  # Adjust the multiplier based on font and preferences
-            width = int(input_length * char_width)
-            return width
             
     def create_form(self, parent):
         """Create form fields from form_definition and return a wx.Sizer with the complete form layout."""
@@ -214,7 +293,7 @@ class FormManager():
         if self.form_data is None:
             raise ValueError("Form definition not loaded. Call load_form_definition() first.")
         
-        fields = []
+        self.fields = []
 
         # Extract the form_fields from form_definition
         form_fields = self.form_data.get("form_fields", [])
@@ -222,31 +301,34 @@ class FormManager():
         self.form_sizer = wx.FlexGridSizer(num_rows, 3, 15, 20) 
 
         for i, field_definition in enumerate(form_fields):
-            if field_definition["type"] == "TextField":
-                label_text =  field_definition.get("label", f"Text Input {i+1}:")
-                validation_rules = field_definition.get("validation_rules", {})
-                input_length = field_definition.get("input_length", 10)
-
-                field = TextField(parent, 
-                                  label_text,
-                                  input_length,
-                                  validation_rules)                            
+            if field_definition["type"] == "TextField":              
+                field = TextField(self, parent, field_definition)                            
+                
+            elif field_definition["type"] == "button":                
+                field = ButtonField(parent, field_definition)                
+                #self.form_sizer.Add(field, 0, flag=wx.EXPAND)
             else:
                 raise ValueError(f"Unsupported field type: {field_definition['type']}")
     
-            fields.append(field)
-            
-            label, input, error_indicator = field.renderField()  
-            
-            width = self.calc_width(input_length, input)
-            input.SetMinSize((width, -1))  # Set the desired minimum width
-            
-            self.form_sizer.Add(label)
-            #self.form_sizer.Add(input, flag=wx.EXPAND)
-            self.form_sizer.Add(input)
-            self.form_sizer.Add(error_indicator)
-
-        
+            self.fields.append(field)
+            field.renderField(self.form_sizer)  
 
         # Make sure the sizer recalculates its layout now that we've added all the controls
         self.form_sizer.Layout()
+
+    def validate(self):
+        # Iterate over all fields and call their validate method    
+        valid = all(field.validate() for field in self.fields if hasattr(field, 'validate'))        
+        if valid:
+            self.context["is_valid"] = True
+            # Iterate over all fields and call their validate method
+            for field in self.fields:
+                if field.enabled_condition is not None:
+                    is_enabled = evaluate_condition(field.enabled_condition, self.context)
+                    if is_enabled:
+                        field.enable()
+                    else:
+                        field.disable()
+        else:
+            print("Form is invalid!")
+        

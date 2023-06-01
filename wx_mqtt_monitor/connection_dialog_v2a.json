@@ -79,6 +79,16 @@
                 "min": 1,
                 "max": 20
             }
+        },
+        {
+            "id": "save_button",
+            "type": "button",
+            "label": "Save",            
+            "visible": true,
+            "visibility_condition": "true",
+            "enabled": false,
+            "enabled_condition": "is_valid",
+            "events": ["save"]
         }
     ]
 }

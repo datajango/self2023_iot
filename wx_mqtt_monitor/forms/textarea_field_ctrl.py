@@ -1,5 +1,5 @@
 import wx
-from mqtt_monitor.forms.field_ctrl import FieldCtrl
+from wx_mqtt_monitor.forms.field_ctrl import FieldCtrl
 
 class TextAreaFieldCtrl(FieldCtrl):
     def __init__(self, parent, id, field_data):
