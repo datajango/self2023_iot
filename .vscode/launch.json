@@ -24,7 +24,20 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             },
-        },        
+        },
+        {
+            "name": "wx_control",
+            "cwd": "${workspaceFolder}",
+            "program": "wx_mqtt_monitor/wx_control.py",
+            "args": [],
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+        },      
         {
             "name": "qt_mqtt_monitor",
             "cwd": "${workspaceFolder}",
