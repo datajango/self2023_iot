@@ -3,4 +3,4 @@ paho-mqtt
 pytest
 pyside6
 simpleeval
-`
+cryptography
