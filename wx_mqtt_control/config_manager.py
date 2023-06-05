@@ -11,8 +11,6 @@ class ConfigurationManager:
         else:
             self.file_name = file_name
         self.config = {"connections": []}  # initialize with default config
-
-        self.file_path = None
         self.load_config()
 
     def get_config_paths(self):
@@ -55,14 +53,13 @@ class ConfigurationManager:
     def load_config(self):
         """Load the configuration from the default location"""
         # This function exists after successful load
-        self.file_path = None
+
         paths = self.get_config_paths()
         
         for path in paths:
             try:
                 if os.path.exists(path):
                     with open(path, 'r') as f:
-                        self.file_path = path
                         self.config = json.load(f)
                         logging.info(f"Configuration loaded successfully from {path}")
                         return
@@ -77,10 +74,6 @@ class ConfigurationManager:
         
 
     def save_config(self):
-        if self.file_path is None:
-            logging.error("No configuration file loaded, cannot save.")
-            return
-        
         with open(self.file_path, 'w') as f:
             json.dump(self.config, f, indent=4)
 
