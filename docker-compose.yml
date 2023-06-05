@@ -2,24 +2,11 @@ version: '3.8'
 
 services:
   mosquitto:
-    container_name: mosquitto-mqtt
     image: eclipse-mosquitto:latest
     volumes:
-      - ./config:/mosquitto/config/
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
+      - ./config/:/mosquitto/config/
+      - ./log/:/mosquitto/log/
+      - ./data:/mosquitto/data/
     ports:
       - '1883:1883'
-      - '8883:8883'
-    environment:
-      TZ: 'Europe/Berlin'
-    networks:
-      - mqtt
-    restart: always
 
-networks:
-  mqtt:
-
-volumes:
-  mosquitto_data:
-  mosquitto_log:

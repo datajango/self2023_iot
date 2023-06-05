@@ -1,0 +1,25 @@
+# Base image with Mosquitto MQTT Broker
+FROM eclipse-mosquitto:2
+
+# # Arguments for user, group, and id's
+# ARG UID
+# ARG GID
+# ARG USER
+
+# # Validate that the arguments have been supplied
+# RUN if [ -z "$UID" ] || [ -z "$GID" ] || [ -z "$USER" ]; then echo "UID, GID and USER are mandatory" && exit 1; fi
+
+# # If the user is not root, modify the existing user and group
+# RUN if [ ${USER} != "root" ]; then \
+#         apk add --no-cache shadow && \
+#         groupmod -g ${GID} ${USER} && \
+#         usermod -u ${UID} -g ${GID} ${USER}; \
+#     fi
+
+# # Change the ownership of /mosquitto directory to USER
+# RUN chown -R ${USER}:${USER} /mosquitto
+
+# # Switch to the user
+# USER ${USER}
+
+# CMD ["tail", "-f", "/dev/null"]

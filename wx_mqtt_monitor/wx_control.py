@@ -94,8 +94,9 @@ class MainFrame(wx.Frame):
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
 
-        self.client.connect("192.168.1.32", 1883, 60)
-
+        # self.client.connect("192.168.1.32", 1883, 60)
+        self.client.connect("localhost", 1883, 60)
+        self.client.loop_start()
         self.menu_bar = wx.MenuBar()
         self.file_menu = wx.Menu()
         self.publish_item = self.file_menu.Append(wx.ID_ANY, "Publish...")
@@ -107,6 +108,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_log, self.log_item)
 
         self.log_dialog = LogDialog(self)
+        self.pub_dialog = PublishDialog(self, self.client)
 
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
@@ -118,20 +120,18 @@ class MainFrame(wx.Frame):
         device_id = msg.topic.split('/')[-1]
         payload = json.loads(msg.payload)
 
-        if device_id not in self.device_panels:
-            device_panel = DevicePanel(self, device_id)
-            self.sizer.Add(device_panel, flag=wx.EXPAND)
-            self.device_panels[device_id] = device_panel
+        # if device_id not in self.device_panels:
+        #     device_panel = DevicePanel(self, device_id)
+        #     self.sizer.Add(device_panel, flag=wx.EXPAND)
+        #     self.device_panels[device_id] = device_panel
 
-        self.device_panels[device_id].update(payload)
-        self.Layout()
+        # self.device_panels[device_id].update(payload)
+        # self.Layout()
 
         self.log_dialog.log_message(f'{msg.topic} {str(payload)}')
 
     def on_publish(self, event):
-        dlg = PublishDialog(self, self.client)
-        dlg.ShowModal()
-        dlg.Destroy()
+        self.pub_dialog.Show()
 
     def on_log(self, event):
         self.log_dialog.Show()
