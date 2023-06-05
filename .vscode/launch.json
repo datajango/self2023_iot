@@ -26,9 +26,9 @@
             },
         },
         {
-            "name": "wx_control",
+            "name": "wx_mqtt_control",
             "cwd": "${workspaceFolder}",
-            "program": "wx_mqtt_monitor/wx_control.py",
+            "program": "wx_mqtt_control/main.py",
             "args": [],
             "type": "python",
             "request": "launch",
