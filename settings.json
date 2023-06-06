@@ -2,11 +2,14 @@
     "connections": [
         {
             "name": "RPI4",
-            "host": "192.168.1.22",
-            "port": 1883,
+            "host": "192.168.1.27",
+            "port": "1883",
             "topics": [
                 "#"
-            ]
+            ],
+            "username": "",
+            "password": "",
+            "use_ssl": false
         },
         {
             "name": "SET",
