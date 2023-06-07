@@ -75,7 +75,7 @@ You should see Hello, World! printed in the first terminal window. This means th
 
 1. Create the virtual environment. You do this with the python3 -m venv command, followed by the name of the virtual environment. 
 ```bash
-python3 -m venv .venv
+python -m venv .venv
 ```
 1. Activate the virtual environment. 
 ```bash
@@ -83,7 +83,13 @@ source .venv/bin/activate
 ```
 1. You can use the pip install -r command to install all the packages listed in the requirements file. For example:
 ```bash
+pip install attrdict
+
 pip install -r requirements.txt
+```
+- on Unbunto 22.04
+```
+pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04/ wxPython
 ```
 
 ## Update May 29. 2023

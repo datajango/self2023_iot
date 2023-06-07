@@ -1,0 +1,37 @@
+### Turn LED On
+http://192.168.1.16/led/on
+
+
+### Turn LED Off
+http://192.168.1.16/led/off
+
+
+### Play Music
+http://192.168.1.16/music/off
+
+### Buzzer On
+http://192.168.1.16/buz/on
+
+### Fan On
+http://192.168.1.16/fan/on
+
+### Fan Off
+http://192.168.1.16/fan/off
+
+### Sfx 1 On
+http://192.168.1.16/sfx1/on
+
+### Sfx 1 Off
+http://192.168.1.16/sfx1/off
+
+### Sfx 2 On
+http://192.168.1.16/sfx2/on
+
+### Sfx 2 Off
+http://192.168.1.16/sfx2/off
+
+### Temp On
+http://192.168.1.16/temp/on
+
+### Temp Off
+http://192.168.1.16/temp/off
