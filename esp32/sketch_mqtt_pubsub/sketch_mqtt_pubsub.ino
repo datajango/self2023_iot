@@ -7,11 +7,11 @@
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient); 
 
-char *mqttServer = "192.168.1.25";
+char *mqttServer = "10.0.0.4";
 int mqttPort = 1883;
 
-const char *SSID = "XYZ";
-const char *PWD = "PDQ";
+const char *SSID = "NETGEAR95";
+const char *PWD = "heavymango777";
 long last_time = 0;
 char data[50];
 
@@ -28,7 +28,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 
 void connectToWiFi() {
-  Serial.print("Connecting to WIFI");
+  Serial.println("Connecting to WIFI");
  
   WiFi.begin(SSID, PWD);
   Serial.println(SSID);
