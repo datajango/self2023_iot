@@ -1,7 +1,7 @@
 #include <WiFiClientSecure.h>
 
-const char* ssid = "NETGEAR33";
-const char* wifipassword = "fancyzoo762";
+const char* ssid = "XYZ";
+const char* wifipassword = "PDQ";
 
 WiFiClientSecure wifi;
 

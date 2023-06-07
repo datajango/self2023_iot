@@ -16,8 +16,8 @@ extern "C" {
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 String item = "0";
-const char* ssid = "NETGEAR33";
-const char* password = "fancyzoo762";
+const char* ssid = "XYZ";
+const char* password = "PDQ";
 // Raspberry Pi Mosquitto MQTT Broker
 #define MQTT_HOST IPAddress(192, 168, 1, 25)
 #define MQTT_PORT 1883
