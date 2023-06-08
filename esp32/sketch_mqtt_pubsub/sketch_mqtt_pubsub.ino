@@ -18,12 +18,26 @@ char data[50];
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Callback - ");
   Serial.println("Message:");
+  
+  char payload_str[length+1];  // create a buffer to hold payload
+  
   for (int i = 0; i < length; i++) {
+    payload_str[i] = (char)payload[i];  // copy the payload into the buffer
     Serial.print((char)payload[i]);
   }
+  payload_str[length] = '\0';  // null-terminate the string
+
   Serial.println("");
-  sprintf(data, "{\"response\" : \"ACK\"}");
+    
+  const char* templateStr = "{\"response\" : \"ACK\", \"payload\" : \"%s\"}";
+  unsigned int dataSize = strlen(templateStr) - 2 + length + 1;  // -2 because %s will be replaced
+  char* data = new char[dataSize]; // allocate the buffer dynamically
+  
+  snprintf(data, dataSize, templateStr, payload_str);  // insert the payload string
+  
   mqttClient.publish("/swa/response", data);
+
+  delete[] data; // free the allocated memory
 }
 
 
