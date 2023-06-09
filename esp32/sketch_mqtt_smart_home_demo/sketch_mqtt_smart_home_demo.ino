@@ -14,6 +14,15 @@
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
+void publish(PubSubClient &mqttClient, const String &topic, DynamicJsonDocument &doc) {
+  String payload;
+  serializeJson(doc, payload);
+  mqttClient.publish(topic.c_str(), payload.c_str());
+
+  Serial.println(topic);
+  Serial.println(payload);
+}
+
 
 class Property {
 public:
@@ -89,6 +98,10 @@ public:
   String getMacAddress() {
     // return the MAC address in string format
     return macAddress;
+  }
+
+  void update() {
+    // Here you can call other update-like methods of other components.
   }
 
 private:
@@ -262,6 +275,109 @@ public:
   }
 };
 
+class ButtonManager {
+private:
+  int btn1;
+  int btn2;
+  bool btn1State;
+  bool btn2State;
+  bool lastBtn1State;
+  bool lastBtn2State;
+
+public:
+  ButtonManager(int button1Pin, int button2Pin) : 
+    btn1(button1Pin), btn2(button2Pin), 
+    btn1State(true), btn2State(true),
+    lastBtn1State(true), lastBtn2State(true) 
+  {
+    pinMode(btn1, INPUT);
+    pinMode(btn2, INPUT);
+  }
+
+  void updateButtonStates(PubSubClient &mqttClient, const String &topic) {
+    bool currentBtn1State = digitalRead(btn1);
+    bool currentBtn2State = digitalRead(btn2);
+    
+    if (currentBtn1State != lastBtn1State) {
+      DynamicJsonDocument doc(1024);
+      doc["button"] = "1";
+      
+      if (!currentBtn1State) { // Button was just pressed
+        doc["action"] = "pressed";
+      } else { // Button was just released
+        doc["action"] = "released";
+      }
+      publish(mqttClient, topic, doc);
+
+      lastBtn1State = currentBtn1State;
+    }
+    
+    if (currentBtn2State != lastBtn2State) {
+      DynamicJsonDocument doc(1024);
+      doc["button"] = "2";
+
+      if (!currentBtn2State) { // Button was just pressed
+        doc["action"] = "pressed";
+      } else { // Button was just released
+        doc["action"] = "released";
+      }
+      publish(mqttClient, topic, doc);
+
+      lastBtn2State = currentBtn2State;
+    }
+
+    btn1State = currentBtn1State;
+    btn2State = currentBtn2State;
+  }
+
+
+  bool getButtonState(int buttonPin) const {
+    if (buttonPin == btn1) {
+      return btn1State;
+    } else if (buttonPin == btn2) {
+      return btn2State;
+    } else {
+      Serial.println("Error: Invalid button pin");
+      return false;
+    }
+  }
+
+  String getStringButtonState(int buttonPin) const {
+    return getButtonState(buttonPin) ? "1" : "0";
+  }
+};
+
+
+class PIRManager {
+private:
+  const int pirPin;
+  bool lastState;
+
+public:
+  PIRManager(int pirPin) : pirPin(pirPin), lastState(false) {
+    pinMode(pirPin, INPUT);
+  }
+
+  void update(PubSubClient &mqttClient, const String &topic) {
+    bool currentState = digitalRead(pirPin);
+
+    if (currentState != lastState) {
+      DynamicJsonDocument doc(1024);
+      doc["sensor"] = "pir";
+
+      if (currentState) {
+        doc["state"] = "occupancy";
+      } else {
+        doc["state"] = "vacancy";
+      }
+
+      publish(mqttClient, topic, doc);
+
+      lastState = currentState;
+    }
+  }
+};
+
 class BuzzerManager {
 private:
   int pin;
@@ -319,13 +435,240 @@ public:
 
     Serial.println("birthday end");
   }
+
+  /*
+  [
+    { "note": 440, "duration": 500, "pause": 500 },
+    { "note": 494, "duration": 500, "pause": 500 },
+    { "note": 523, "duration": 500, "pause": 500 },
+    { "note": 587, "duration": 500, "pause": 500 }
+  ]
+  */
+  void play_notes(const char* payload) {
+    const size_t capacity = JSON_ARRAY_SIZE(20) + 20*JSON_OBJECT_SIZE(3);
+    DynamicJsonDocument doc(capacity);
+
+    // Parse the input payload
+    DeserializationError error = deserializeJson(doc, payload);
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
+
+    JsonArray array = doc.as<JsonArray>();
+    for(JsonVariant v : array) {
+      JsonObject obj = v.as<JsonObject>();
+      int note = obj["note"];
+      int duration = obj["duration"];
+      int pause = obj["pause"];
+
+      tonePlay(note, duration);
+      delay(pause);
+    }
+
+    toneStop();
+  }
 };
+
+class ServoManager {
+private:
+  int channel1;
+  int channel2;
+  int freq;
+  int resolution;
+  int pin1;
+  int pin2;
+
+public:
+  ServoManager(int channel_PWM, int channel_PWM2, int freq_PWM, int resolution_PWM, int PWM_Pin1, int PWM_Pin2) : 
+    channel1(channel_PWM), 
+    channel2(channel_PWM2), 
+    freq(freq_PWM), 
+    resolution(resolution_PWM), 
+    pin1(PWM_Pin1), 
+    pin2(PWM_Pin2)
+  {
+    ledcSetup(channel1, freq, resolution); 
+    ledcSetup(channel2, freq, resolution); 
+    ledcAttachPin(pin1, channel1); 
+    ledcAttachPin(pin2, channel2); 
+  }
+
+  void openWindow() {
+    Serial.println("open the window");
+    // Adjust the value as necessary to open the window
+    ledcWrite(channel1, 90);
+  }
+
+  void closeWindow() {
+    Serial.println("close the window");
+    ledcWrite(channel1, 60);
+  }
+
+  void openDoor() {
+    Serial.println("open the door");
+    // Adjust the value as necessary to open the door
+    ledcWrite(channel2, 40);
+  }
+
+  void closeDoor() {
+    Serial.println("close the door");
+    ledcWrite(channel2, 20);
+  }
+};
+
+#define LED_PIN    26
+#define LED_COUNT 4
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+class NeoPixelManager {
+private:
+  Adafruit_NeoPixel strip;
+  int brightness;
+
+public:
+  NeoPixelManager(int pin, int ledCount, int brightness = 50)
+    : strip(ledCount, pin, NEO_GRB + NEO_KHZ800), brightness(brightness)
+  {
+    //strip.begin();
+    //strip.show();
+    //strip.setBrightness(brightness);
+  }
+
+  // Define the accessors here:
+  Adafruit_NeoPixel& getStrip() { return strip; }
+  int getBrightness() { return brightness; }
+  
+  void setBrightness(int brightness) {
+    strip.setBrightness(brightness);
+  }
+
+  void turnOnColor(const char* color) {
+    if (strcmp(color, "red") == 0) {
+      colorWipe(strip.Color(255,   0,   0), 50);
+    } else if (strcmp(color, "orange") == 0) {
+      colorWipe(strip.Color(200,   100,   0), 50);
+    }
+    // Add other color conditions here...
+  }
+
+  void turnOffColor() {
+    colorWipe(strip.Color(0,   0,   0), 50);
+  }
+
+  void activateEffect(const char* effect) {
+    if (strcmp(effect, "rainbow") == 0) {
+      rainbow(10);
+    } else if (strcmp(effect, "theaterChaseRainbow") == 0) {
+      theaterChaseRainbow(50);
+    }
+    // Add other effects conditions here...
+  }
+
+  void deactivateEffect() {
+    colorWipe(strip.Color(0,   0,   0), 50);
+  }
+  
+  // Fill strip pixels one after another with a color. Strip is NOT cleared
+  // first; anything there will be covered pixel by pixel. Pass in color
+  // (as a single 'packed' 32-bit value, which you can get by calling
+  // strip.Color(red, green, blue) as shown in the loop() function above),
+  // and a delay time (in milliseconds) between pixels.
+  void colorWipe(uint32_t color, int wait) {
+    for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
+      strip.setPixelColor(i, color);         //  Set pixel's color (in RAM)
+      strip.show();                          //  Update strip to match
+      delay(wait);                           //  Pause for a moment
+    }
+  }
+
+  // Theater-marquee-style chasing lights. Pass in a color (32-bit value,
+  // a la strip.Color(r,g,b) as mentioned above), and a delay time (in ms)
+  // between frames.
+  void theaterChase(uint32_t color, int wait) {
+    for(int a=0; a<10; a++) {  // Repeat 10 times...
+      for(int b=0; b<3; b++) { //  'b' counts from 0 to 2...
+        strip.clear();         //   Set all pixels in RAM to 0 (off)
+        // 'c' counts up from 'b' to end of strip in steps of 3...
+        for(int c=b; c<strip.numPixels(); c += 3) {
+          strip.setPixelColor(c, color); // Set pixel 'c' to value 'color'
+        }
+        strip.show(); // Update strip with new contents
+        delay(wait);  // Pause for a moment
+      }
+    }
+  }
+
+  // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
+  void rainbow(int wait) {
+    // Hue of first pixel runs 5 complete loops through the color wheel.
+    // Color wheel has a range of 65536 but it's OK if we roll over, so
+    // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
+    // means we'll make 5*65536/256 = 1280 passes through this outer loop:
+    for(long firstPixelHue = 0; firstPixelHue < 5*65536; firstPixelHue += 256) {
+      for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
+        // Offset pixel hue by an amount to make one full revolution of the
+        // color wheel (range of 65536) along the length of the strip
+        // (strip.numPixels() steps):
+        int pixelHue = firstPixelHue + (i * 65536L / strip.numPixels());
+        // strip.ColorHSV() can take 1 or 3 arguments: a hue (0 to 65535) or
+        // optionally add saturation and value (brightness) (each 0 to 255).
+        // Here we're using just the single-argument hue variant. The result
+        // is passed through strip.gamma32() to provide 'truer' colors
+        // before assigning to each pixel:
+        strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(pixelHue)));
+      }
+      strip.show(); // Update strip with new contents
+      delay(wait);  // Pause for a moment
+    }
+  }
+
+  // Rainbow-enhanced theater marquee. Pass delay time (in ms) between frames.
+  void theaterChaseRainbow(int wait) {
+    int firstPixelHue = 0;     // First pixel starts at red (hue 0)
+    for(int a=0; a<30; a++) {  // Repeat 30 times...
+      for(int b=0; b<3; b++) { //  'b' counts from 0 to 2...
+        strip.clear();         //   Set all pixels in RAM to 0 (off)
+        // 'c' counts up from 'b' to end of strip in increments of 3...
+        for(int c=b; c<strip.numPixels(); c += 3) {
+          // hue of pixel 'c' is offset by an amount to make one full
+          // revolution of the color wheel (range 65536) along the length
+          // of the strip (strip.numPixels() steps):
+          int      hue   = firstPixelHue + c * 65536L / strip.numPixels();
+          uint32_t color = strip.gamma32(strip.ColorHSV(hue)); // hue -> RGB
+          strip.setPixelColor(c, color); // Set pixel 'c' to value 'color'
+        }
+        strip.show();                // Update strip with new contents
+        delay(wait);                 // Pause for a moment
+        firstPixelHue += 65536 / 90; // One cycle of color wheel over 90 frames
+      }
+    }
+  }
+};
+
 
 
 #define fanPin1 19
 #define fanPin2 18
 #define led_y 12  //Define the yellow led pin to 12
 #define buzzer_pin 25
+#define btn1 16
+#define btn2 27
+#define pir 14
+
+//Servo channel
+int channel_PWM = 13;
+int channel_PWM2 = 10;
+int freq_PWM = 50; 
+int resolution_PWM = 10;
+const int PWM_Pin1 = 5;
+const int PWM_Pin2 = 13;
+
+#define LED_PIN    26
+#define LED_COUNT 4
+
+
 
 class SmartHouse : public Device {
 public:
@@ -334,12 +677,22 @@ public:
     LEDManager ledManager;
     FanManager fanManager;
     BuzzerManager buzzerManager;
+    ButtonManager buttonManager;
+    PIRManager pirmanager;
+    ServoManager servoManager;
+    NeoPixelManager pixelManager;
+
+
 
     SmartHouse() : xht11Sensor(17), 
                    lcdManager(0x27, 16, 2), 
                    ledManager(led_y), 
                    fanManager(fanPin1, fanPin2), 
-                   buzzerManager(buzzer_pin) 
+                   buzzerManager(buzzer_pin),
+                   buttonManager(btn1, btn2),
+                   pirmanager(pir),
+                   servoManager(channel_PWM, channel_PWM2, freq_PWM, resolution_PWM, PWM_Pin1, PWM_Pin2),
+                   pixelManager(LED_PIN, LED_COUNT)
     {
         registerProperty("serialNumber", nullptr, [this]{ return String(this->getMacAddress()); });
         registerProperty("macAddress", nullptr, [this]{ return String(this->getMacAddress()); });
@@ -356,12 +709,27 @@ public:
         //              [this](String value) { buzzerManager.setStringState(value); },
         //              [this]() { return String(buzzerManager.getState()); });                                        
 
+        // Add properties for the buttons.
+        registerProperty("button1", 
+                 nullptr, 
+                 [this]{ return buttonManager.getStringButtonState(btn1); });
+
+        registerProperty("button2", 
+                 nullptr, 
+                 [this]{ return buttonManager.getStringButtonState(btn2); });
+
+
+
         registerCommand("birthday", [this](const char* payload) {
             buzzerManager.birthday(payload);
         });
 
         registerCommand("buzzer", [this](const char* payload) {
             buzzerManager.buzzer(payload);
+        });
+
+        registerCommand("play_notes", [this](const char* payload) {
+          buzzerManager.play_notes(payload);
         });
 
     }
@@ -380,6 +748,21 @@ public:
         lcdManager.clear();
         lcdManager.setText(0, 0, "IP: " + localIP.toString());
         lcdManager.setText(1, 0, "MQTT: " + mqttServer);
+    }
+
+     void update() {
+        buttonManager.updateButtonStates(mqttClient, "buttons"); // Update button states
+        pirmanager.update(mqttClient, "motion"); 
+        Device::update();
+
+        // if (buttonManager.getButtonState(btn1)==false) {
+        //    Serial.println("Button1");
+        // }
+
+        // if (buttonManager.getButtonState(btn2)==false) {
+        //    Serial.println("Button2");
+        // }
+
     }
 
 };
@@ -513,8 +896,6 @@ void handlePlayBirthday(const char* topic, const char* payload) {
 }
 
 void handleBuzzer(const char* topic, const char* payload) {
-  // Turn off the fan
-  //smarthouse.callCommand("buzzer", payload);
   smarthouse.buzzerManager.buzzer(payload);
 
   // Create a DynamicJsonDocument
@@ -530,16 +911,253 @@ void handleBuzzer(const char* topic, const char* payload) {
   mqttClient.publish("/swa/buzzer/ack", response.c_str());
 }
 
+void handlePlayNotes(const char* topic, const char* payload) {
+
+  smarthouse.buzzerManager.play_notes(payload);
+
+  // Create a DynamicJsonDocument
+  DynamicJsonDocument doc(128);
+
+  // Populate the JSON document
+  doc["play_notes"] = true;
+
+  // Serialize the JSON document to a string
+  String response;
+  serializeJson(doc, response);
+
+  mqttClient.publish("/swa/buzzer/ack", response.c_str());
+}
+
+void handleServoWindow(const char* topic, const char* payload) {
+  // Parse JSON payload
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+
+  // Get state from JSON
+  int state = doc["state"];
+
+  // Perform action based on the payload
+  if (state == 1) { 
+    smarthouse.servoManager.openWindow();
+  } else if (state == 0) {
+    smarthouse.servoManager.closeWindow();
+  }
+
+  String response;
+  serializeJson(doc, response);
+  mqttClient.publish("/swa/servo/window/ack", response.c_str());
+}
+
+void handleServoDoor(const char* topic, const char* payload) {
+  // Parse JSON payload
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+
+  // Get state from JSON
+  int state = doc["state"];
+
+  // Perform action based on the payload
+  if (state == 1) {     
+    smarthouse.servoManager.openDoor();
+  } else if (state == 0) {
+    smarthouse.servoManager.closeDoor();
+  }
+
+  String response;
+  serializeJson(doc, response);
+  mqttClient.publish("/swa/servo/door/ack", response.c_str());
+}
+
+void handleNeopixel(const char* topic, const char* payload) {
+  // Parse JSON payload
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+  
+  Serial.println("handleNeopixel");
+
+  // Get color or effect and state from JSON
+  JsonArray rgb = doc["rgb"] ;
+  String color = doc["color"] | ""; // this will be empty if "effect" is used
+  String effect = doc["effect"] | ""; // this will be empty if "color" is used
+  String state = doc["state"] | "";
+  int brightness = doc["brightness"] | 50; // default brightness is set to 50 if not specified
+
+  // Perform null checks
+  if (state == "") {
+    // If "state" is empty, send an error message to MQTT topic
+    String errorMsg = "{\"error\": \"Missing 'state' in payload.\"}";
+    mqttClient.publish("/swa/errors/neopixel", errorMsg.c_str());
+    return;
+  }
+
+  if (color == "" && effect == "") {
+    // If both "color" and "effect" are empty, send an error message to MQTT topic
+    String errorMsg = "{\"error\": \"Either 'color' or 'effect' must be specified in payload.\"}";
+    mqttClient.publish("/swa/errors/neopixel", errorMsg.c_str());
+    return;
+  }
+
+
+  if (!rgb.isNull() && (rgb.size() != 3 || rgb[0].is<int>() == false || rgb[1].is<int>() == false || rgb[2].is<int>() == false)) {
+    // If "rgb" is specified but it's not an array of 3 integers, send an error message to MQTT topic
+    String errorMsg = "{\"error\": \"'rgb' must be an array of 3 integers.\"}";
+    mqttClient.publish("/swa/errors/neopixel", errorMsg.c_str());
+    return;
+  }
+
+
+  if (brightness < 0 || brightness > 255) {
+    // If brightness is not in range 0-255, send an error message to MQTT topic
+    String errorMsg = "{\"error\": \"Brightness must be in range 0-255.\"}";
+    mqttClient.publish("/swa/errors/neopixel", errorMsg.c_str());
+    return;
+  }
+
+  // Apply brightness
+  smarthouse.pixelManager.setBrightness(brightness);
+
+  // Perform action based on the payload  
+  if (state == "on") {
+    if (!color.isEmpty()) {
+      // Convert color name to RGB value and call colorWipe()
+      if (color == "red") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(255,   0,   0), 50);
+      } else if (color == "orange") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(200, 100,   0), 50);
+      } else if (color == "yellow") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(200, 200,   0), 50);
+      } else if (color == "green") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(200, 255,   0), 50);
+      } else if (color == "cyan") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(0, 100,  255), 50);
+      } else if (color == "blue") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(0, 0, 255), 50);
+      } else if (color == "purple") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(100, 0, 255), 50);
+      } else if (color == "white") {
+        smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(255, 255, 255), 50);
+      } 
+      // Add other colors here...
+    } else if (!effect.isEmpty()) {
+      // Perform the specified effect
+      if ((effect == "sfx1") || (effect == "rainbow")) {
+        Serial.println("sfx1 on (rainbow)");
+        smarthouse.pixelManager.rainbow(10);
+      } else if ((effect == "sfx2") || (effect == "theaterChaseRainbow")) {
+        Serial.println("sfx2 on (theaterChaseRainbow)");
+        smarthouse.pixelManager.theaterChaseRainbow(50);
+      } else if ((effect == "sfx3") || (effect == "theaterChase")) {
+        Serial.println("sfx3 on (theaterChase)");        
+        smarthouse.pixelManager.theaterChase(strip.Color(127, 127, 127), 50); // White, half brightness
+        smarthouse.pixelManager.theaterChase(strip.Color(127,   0,   0), 50); // Red, half brightness
+        smarthouse.pixelManager.theaterChase(strip.Color(  0,   0, 127), 50); // Blue, half brightness
+      } 
+      // Add other effects here...
+    } else if (!rgb.isNull()) {
+      // Set the color using the specified RGB values
+      smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(rgb[0], rgb[1], rgb[2]), 50);
+    }
+  } else if (state == "off") {
+    // Turn off the NeoPixel strip
+    smarthouse.pixelManager.colorWipe(smarthouse.pixelManager.getStrip().Color(0, 0, 0), 50);
+  }
+
+  String response;
+  serializeJson(doc, response);
+  mqttClient.publish("/swa/neopixel/ack", response.c_str());
+}
+
+
+void publishNeopixelCapabilities(const char* topic, const char* payload) {
+  // Create a JSON object
+  DynamicJsonDocument doc(1024);
+
+  // Add states
+  JsonArray state = doc.createNestedArray("state");
+  state.add("on");
+  state.add("off");
+
+  // Add brightness  
+  doc["brightness"] = "0 to 255";
+
+  // Add colors
+  JsonArray color = doc.createNestedArray("color");
+  color.add("red");
+  color.add("orange");
+  color.add("yellow");
+  color.add("green");
+  color.add("cyan");
+  color.add("blue");
+  color.add("purple");
+  color.add("white");
+
+  // Add effects
+  JsonArray effect = doc.createNestedArray("effect");
+  effect.add("sfx1");
+  effect.add("sfx2");
+  effect.add("sfx3");
+  
+  // RGB color
+  doc["rgb"] = "Array of 3 integers from 0 to 255, in order [red, green, blue]";
+
+  // Convert JSON object to a String
+  String capabilities;
+  serializeJson(doc, capabilities);
+
+  // Publish the capabilities to the MQTT topic
+  mqttClient.publish("/swa/commands/neopixel/capabilities", capabilities.c_str());
+}
+
+void publishDeviceTopicsAndPayloads(const char* topic, const char* payload) {
+  // Create a JSON object
+  DynamicJsonDocument doc(1024);
+
+  // Add topics and their respective payloads
+
+  // Door Sensor Topic
+  JsonObject doorSensor = doc.createNestedObject("/swa/commands/door");
+  doorSensor["payload"] = "{'state': '<open or close>'}";
+
+  // Temperature Sensor Topic
+  JsonObject tempSensor = doc.createNestedObject("/swa/commands/temp");
+  tempSensor["payload"] = "{'state': '<temperature in Celsius>'}";
+
+  // Humidity Sensor Topic
+  JsonObject humiditySensor = doc.createNestedObject("/swa/commands/humidity");
+  humiditySensor["payload"] = "{'state': '<humidity in percentage>'}";
+
+  // Neopixel Topic
+  JsonObject neopixel = doc.createNestedObject("/swa/commands/neopixel");
+  neopixel["payload"] = "{'state': '<on or off>', 'color': '<color name>', 'effect': '<effect name>', 'rgb': '[R, G, B]'}";
+
+  // Device Capabilities Topic
+  JsonObject capabilities = doc.createNestedObject("/swa/commands/neopixel/capabilities");
+  capabilities["payload"] = "{'state': ['on', 'off'], 'color': ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'white'], 'effect': ['sfx1', 'sfx2', 'sfx3'], 'rgb': 'Array of 3 integers from 0 to 255, in order [red, green, blue]'}";
+
+  // Convert JSON object to a String
+  String topicsAndPayloads;
+  serializeJson(doc, topicsAndPayloads);
+
+  // Publish the topics and their payloads to the MQTT topic
+  mqttClient.publish("/swa/device/topics", topicsAndPayloads.c_str());
+}
+
 
 // Create a mapping of topics to callback functions
 TopicCallback topicCallbacks[] = {
+  {"/swa/commands/help", publishDeviceTopicsAndPayloads},
   {"/swa/commands/xht11", handleXHT11},
   {"/swa/commands/led/on", handleLedOn },
   {"/swa/commands/led/off", handleLedOff },
   {"/swa/commands/fan/on", handleFanOn },
   {"/swa/commands/fan/off", handleFanOff },
   {"/swa/commands/birthday", handlePlayBirthday },
-  {"/swa/commands/buzzer", handleBuzzer }
+  {"/swa/commands/buzzer", handleBuzzer },
+  {"/swa/commands/play_notes", handlePlayNotes },
+  {"/swa/commands/servo/window", handleServoWindow },  
+  {"/swa/commands/servo/door", handleServoDoor },
+  {"/swa/commands/neopixel", handleNeopixel},
+  {"/swa/commands/neopixel/help", publishNeopixelCapabilities}  
 };
 
 const int numTopicCallbacks = sizeof(topicCallbacks) / sizeof(topicCallbacks[0]);
@@ -633,28 +1251,8 @@ void loop() {
   }  
   mqttClient.loop();  
   //delay(5000); // Wait for 1 second before looping again
+
+  smarthouse.update();
 }
 
-
-// void loop() {
-//   unsigned long timestamp = millis();
-//   Serial.print("loop()");
-//   Serial.println(timestamp);
-
-//   if (!mqttClient.connected()) {
-//     long now = millis();
-//     if (now - lastReconnectAttempt > 5000) {
-//       lastReconnectAttempt = now;
-//       // Attempt to reconnect
-//       if (reconnect()) {
-//         lastReconnectAttempt = 0;
-//       }
-//     }
-//   } else {
-//     // Client connected
-
-//     mqttClient.loop();
-//   }
-
-// }
 
