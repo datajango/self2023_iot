@@ -1,11 +1,4 @@
 #include <WiFi.h>
-extern "C" {
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/timers.h"
-}
-#include <AsyncMqttClient.h>
-
-
 #include <ESPmDNS.h>
 #include <WiFiClient.h>
 #include <Adafruit_NeoPixel.h>
@@ -16,27 +9,14 @@ extern "C" {
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 String item = "0";
-const char* ssid = "XYZ";
-const char* password = "PDQ";
-// Raspberry Pi Mosquitto MQTT Broker
-#define MQTT_HOST IPAddress(192, 168, 1, 25)
-#define MQTT_PORT 1883
-
-//MQTT Topic
-#define MQTT_PUB_Output "anthony/v1/telemetry/smarthome/led"
-
-
-AsyncMqttClient mqttClient;
-TimerHandle_t mqttReconnectTimer;
-TimerHandle_t wifiReconnectTimer;
-       
-
+const char* ssid = "ChinaNet-2.4G-0DF0";
+const char* password = "ChinaNet@233";
 WiFiServer server(80);
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C mylcd(0x27,16,2);
-//#include <analogWrite.h>
+#include <analogWrite.h>
 #include "xht11.h"
 xht11 xht(17);
 //#include <ESP32_Servo.h>
@@ -65,51 +45,7 @@ int resolution_PWM = 10;
 const int PWM_Pin1 = 5;
 const int PWM_Pin2 = 13;
 
-void connectToMqtt() {
-  Serial.println("connectToMqtt()");
-  
-  mqttClient.connect();
 
- Serial.println("Connecting to MQTT...");
-}
-
-
-void WiFiEvent(WiFiEvent_t event) {
-  Serial.printf("[WiFi-event] event: %d\n", event);
-  switch(event) {
-    case SYSTEM_EVENT_STA_GOT_IP:
-      Serial.println("WiFi connected");
-      Serial.println("IP address: ");
-      Serial.println(WiFi.localIP());
-      connectToMqtt();
-      break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      Serial.println("WiFi lost connection");
-      xTimerStop(mqttReconnectTimer, 0); 
-      xTimerStart(wifiReconnectTimer, 0);
-      break;
-  }
-}
-
-
-void onMqttConnect(bool sessionPresent) {
-  Serial.println("Connected to MQTT.");
-  Serial.print("Session present: ");
-  Serial.println(sessionPresent);
-}
-
-void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.println("Disconnected from MQTT.");
-  if (WiFi.isConnected()) {
-    xTimerStart(mqttReconnectTimer, 0);
-  }
-}
-
-void onMqttPublish(uint16_t packetId) {
-  Serial.print("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-}
 
 
 void setup() {
@@ -141,10 +77,8 @@ void setup() {
   
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(3000);
-    Serial.println("Trying to connect to WIFI");
-    Serial.println(ssid);
-    Serial.println(password);
+    delay(500);
+    Serial.print(".");
   }
   Serial.println("");
   Serial.print("Connected to ");
@@ -158,18 +92,6 @@ void setup() {
   mylcd.print("ip:");
   mylcd.setCursor(0, 1);
   mylcd.print(WiFi.localIP());  //LCD displays ip adress
-
-  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
-
-
-  Serial.println("Registering EventHandlers()");
-
-  WiFi.onEvent(WiFiEvent);
-
-  mqttClient.onConnect(onMqttConnect);
-  mqttClient.onDisconnect(onMqttDisconnect);
-  mqttClient.onPublish(onMqttPublish);
-  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
 }
 
 void loop() {
@@ -204,22 +126,12 @@ void loop() {
   }
   if(req == "/led/on") //Browser accesses address ip address/led/on
   {
-    s = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
-    s += "{ \"led\": True }";
-    client.println(s);
+    client.println("turn on the LED");
     digitalWrite(led_y, HIGH);
-
-    // Publish an MQTT message on topic esp32/OutputControl
-    uint16_t packetIdPub2 = mqttClient.publish(MQTT_PUB_Output, 1, true, "ON");                            
-    Serial.printf("Publishing on topic %s at QoS 1, packetId %i: ", MQTT_PUB_Output, packetIdPub2);
-    Serial.println(" Message: ON");
   }
   if(req == "/led/off") //Browser accesses address ip address/led/off
   {
-
-    s = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
-    s += "{ \"led\": False }";
-    client.println(s);
+    client.println("turn off the LED");
     digitalWrite(led_y, LOW);
   }
   if(req == "/window/on")
@@ -236,9 +148,7 @@ void loop() {
   }
   if(req == "/music/on")
   {
-    client.println("play music");
-    birthday();
-    noTone(buzzer_pin,0);
+    //client.println("play music");
   }
   if(req == "/music/off")
   {
@@ -434,14 +344,7 @@ void loop() {
     } else {    //Read error
       Serial.println("sensor error");
     }
-    //client.println(dht[2]);
-
-    s = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
-    char buffer[40];
-    sprintf(buffer, "{ \"TEMP\": %d }", dht[2]);
-    s += buffer;
-    client.println(s);
-    Serial.println(s);
+    client.println(dht[2]);
     delay(1000);  //It takes 1000ms to wait for the device to read
   }
   if(req == "/temp/off")
